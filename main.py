@@ -1,129 +1,68 @@
 import os
 from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Crew, Process, LLM
 
-# =====================================================================
-# 1. ENVIRONMENT ENVIRONMENT CONFIGURATION & MODEL INITIALIZATION
-# =====================================================================
+# Import factory functions from our new local modules
+from agents import create_agents
+from tasks import create_tasks
 
-# Load environment variables from a local security file (.env)
+# Load environment configuration secrets
 load_dotenv()
 
-# Define the central large language model brain that drives all agents
-# CrewAI routes this through an abstracted LLM class provider
+# Initialize central processing brain
 claude_brain = LLM(
-    model="anthropic/claude-3-5-sonnet",
-    temperature=0.7
+    model="anthropic/claude-sonnet-5",
+    
 )
 
+# Instantiate the modular building blocks
+job_searcher, skills_advisor, interview_coach = create_agents(claude_brain)
+tasks_list = create_tasks(job_searcher, skills_advisor, interview_coach)
 
-# =====================================================================
-# 2. AGENT DEFINITIONS (PERSONAS & OBJECTIVES)
-# =====================================================================
-
-# Agent 1: Primary Data Gathering & Discovery
-job_searcher = Agent(
-    role="Technical Job Market Researcher",
-    goal="Locate relevant open positions that match user criteria.",
-    backstory="An elite recruiter who knows how to spot high-signal engineering listings and dissect hidden requirements.",
-    llm=claude_brain,
-    verbose=True  # Enables terminal console execution tracking logging
-)
-
-# Agent 2: Analytical & Comparative Evaluation
-skills_advisor = Agent(
-    role="Technical Skills Gap Analyst",
-    goal="Compare job requirements against a user profile to discover gaps and outline direct learning roadmaps.",
-    backstory="A systems engineering mentor who knows exactly what tech stacks matter and how to learn them efficiently without fluff.",
-    llm=claude_brain,
-    verbose=True
-)
-
-# Agent 3: Outbound Strategy & Deliverable Formatting
-interview_coach = Agent(
-    role="Technical Interview Strategist",
-    goal="Generate highly specific technical interview questions based on targeted job descriptions.",
-    backstory="A veteran engineering manager who conducts tough but fair technical interviews, focusing heavily on concrete project execution.",
-    llm=claude_brain,
-    verbose=True
-)
-
-
-# =====================================================================
-# 3. TASK DEFINITIONS (THE SEQUENTIAL WORKFLOW ACTIONS)
-# =====================================================================
-
-# Step 1: Initialize raw research discovery
-task_find_jobs = Task(
-    description=(
-        "Search and analyze what core technical skills are currently highest "
-        "in demand for {target_roles} positions in {location}. Focus explicitly "
-        "on hardware dependencies, software stacks, and development tooling."
-    ),
-    expected_output="A structured list of core requirements, industry expectations, and critical technical skills.",
-    agent=job_searcher
-)
-
-# Step 2: Comparative context translation (Consumes output from Step 1)
-task_analyze_skills = Task(
-    description=(
-        "Review the target technical profiles discovered by the Researcher. "
-        "Cross-reference them against this candidate profile: {user_profile}. "
-        "Pinpoint critical skill gaps and suggest a practical timeline to bridge them."
-    ),
-    expected_output="A concise skill gap breakdown paired with specific project or framework learning paths.",
-    agent=skills_advisor
-)
-
-# Step 3: Actionable output synthesis (Consumes output from Step 2)
-task_coaching = Task(
-    description=(
-        "Review the gathered job requirements and identified skill gaps. "
-        "Synthesize a targeted performance playbook containing 3 highly probable technical "
-        "interview questions and evaluation talking points customized for this pipeline."
-    ),
-    expected_output="3 targeted interview questions complete with ideal engineering response strategies and tips.",
-    agent=interview_coach
-)
-
-
-# =====================================================================
-# 4. CREW ASSEMBLY & ORCHESTRATION PIPELINE
-# =====================================================================
-
-# Bind the individual components together into an executing ecosystem
+# Assemble everything into the runtime orchestrator
 job_hunting_crew = Crew(
     agents=[job_searcher, skills_advisor, interview_coach],
-    tasks=[task_find_jobs, task_analyze_skills, task_coaching],
-    process=Process.sequential  # Forces chronological, pipeline execution
+    tasks=tasks_list,
+    process=Process.sequential
 )
 
-
-# =====================================================================
-# 5. EXECUTION MATRIX & INPUT KEYWORD INJECTION
-# =====================================================================
-
-# Define runtime parameters mapped directly to the bracketed tokens {} in the tasks
+# Execution payload setup
+# Execution payload setup
 execution_inputs = {
     "target_roles": "Embedded Software & Firmware Engineering Internships",
     "location": "Greater Toronto Area",
     "user_profile": (
-        "3rd-year Computer Engineering student. Proficient in C/C++ and Python. "
-        "Experienced with bare-metal microcontrollers (SPI/I2C), writing low-level "
-        "hardware emulators, and signal analysis using Digilent WaveForms. "
-        "Lacks production RTOS (Real-Time Operating System) or Linux kernel driver experience."
+        "Candidate Background: Computer Engineering student at McMaster University "
+        "with a 3.86/4.0 GPA (Dean's List). Strong foundational knowledge in Data Structures "
+        "& Algorithms, Embedded Systems Design, Digital Logic, and Computer Architecture.\n\n"
+        
+        "Enterprise Experience: Former IT Core Systems Intern at Zurich Canada. Experienced "
+        "in deploying enterprise error monitoring systems (Datadog) across multi-environment "
+        "stacks, building VBA data aggregation pipelines for large datasets (14,000+ records), "
+        "and tracking agile engineering delivery with custom Jira dashboards.\n\n"
+        
+        "Core Hardware & Systems Projects:\n"
+        "- Game Boy Emulator (C++): Built a low-level, cycle-accurate Sharp LR35902 CPU architecture "
+        "emulator from scratch using SDL2. Implemented opcode decoding, a custom Memory Management "
+        "Unit (MMU), memory bank switching (MBC), and persistent cartridge save states.\n"
+        "- Portable LiDAR Scanner (C): Developed firmware on a TI MSP432 MCU inside Keil uVision. "
+        "Configured register-level peripheral interfacing via I2C (100 kbps) and UART (115200 bps), "
+        "driving a stepper motor for 360-degree sweeps mapped to a 3D polar-to-volumetric MATLAB engine.\n"
+        "- Assistive Engineering Design: Co-designed mechanical shortcut-mapped hardware enclosures "
+        "following the Engineering Design Cycle.\n\n"
+        
+        "Technical Toolset:\n"
+        "- Languages: Advanced in C/C++, Python, Java, JavaScript, Verilog, VHDL, MATLAB.\n"
+        "- Hardware/EDA Tools: KiCad, Intel Quartus, Git, Soldering, SolidWorks, Fusion 360.\n"
+        "- Silicon Architectures: ARM-based Microcontrollers (MSP432, ESP32), Arduino, and FPGAs."
     )
 }
 
 if __name__ == "__main__":
-    print("\n==============================================")
-    print("🚀 INITIALIZING MULTI-AGENT ORCHESTRATION...")
-    print("==============================================\n")
+    print("\nRunning Pipeline...")
     
-    # Run the system pipeline
+    # Execute the crew pipeline
     final_report = job_hunting_crew.kickoff(inputs=execution_inputs)
     
-    print("\n==============================================")
-    print("✨ PIPELINE COMPLETE. GENERATED CONSOLIDATED REPORT:")
-    print("==============================================\n")
+    print("\n✨ Pipeline Complete. Report:")
     print(final_report)
