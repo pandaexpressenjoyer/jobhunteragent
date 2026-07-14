@@ -1,6 +1,7 @@
 import os
 import sys  
-import re  
+import re   
+from pypdf import PdfReader  
 from dotenv import load_dotenv
 from crewai import Crew, Process, LLM
 
@@ -8,85 +9,86 @@ from crewai import Crew, Process, LLM
 from agents import create_agents
 from tasks import create_tasks
 
-
+# =====================================================================
+# STANDARD STREAM INTERCEPTOR (THE TEE FILTER PATTERN)
+# =====================================================================
 class TerminalTee:
     """
-    Hooks directly into standard output. Displays colored logs on screen, 
-    but sanitizes text sequences from terminal ANSI control characters 
-    before writing clean output strings to disk storage.
+    Hooks directly into the system stdout vector. Duplicates colored text streams 
+    to the monitor screen while processing and cleaning out ANSI system terminal signals 
+    before committing markdown entries onto local storage media blocks.
     """
     def __init__(self, filename):
         self.terminal = sys.stdout
         self.log_file = open(filename, "w", encoding="utf-8")
-        # Compile standard regex pattern to trap colors, text highlights, and box shapes
+        # Regular expression compiled to capture and isolate terminal color/graphics escapes
         self.ansi_cleaner = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
     def write(self, message):
-        # 1. Print unmodified colored string sequence onto the live console terminal display
+        # Forward un-modified array data stream straight to live visual terminal screen
         self.terminal.write(message)   
         
-        # 2. Strip raw escape signals before writing down to your log file
+        # Scrub formatting escapes prior to physical document execution steps
         clean_message = self.ansi_cleaner.sub('', message)
         self.log_file.write(clean_message)   
 
     def flush(self):
-        # Flushes buffered data to physical disk blocks immediately
+        # Enforce instant physical disk writes for underlying buffer queues
         self.terminal.flush()
         self.log_file.flush()
 
 
-# Load environment variables (API tokens) from the secure local .env file
+# Load credential profiles from the local environment variable repository
 load_dotenv()
 
-# Initialize the central processing model brain using the active production model
+# Instantiate core large language model control loop
 claude_brain = LLM(
     model="anthropic/claude-sonnet-5"
 )
 
-# Instantiate the modular building blocks
-job_searcher, skills_advisor, interview_coach = create_agents(claude_brain)
-tasks_list = create_tasks(job_searcher, skills_advisor, interview_coach)
+# Unpack our four working agent systems and link task criteria objects
+job_searcher, skills_advisor, interview_coach, ats_optimizer = create_agents(claude_brain)
+tasks_list = create_tasks(job_searcher, skills_advisor, interview_coach, ats_optimizer)
 
-# Assemble everything into the runtime sequential orchestrator
+# Assemble structural pipeline models into execution framework
 job_hunting_crew = Crew(
-    agents=[job_searcher, skills_advisor, interview_coach],
+    agents=[job_searcher, skills_advisor, interview_coach, ats_optimizer],
     tasks=tasks_list,
-    process=Process.sequential  # Ensures task synchronization order
+    process=Process.sequential  
 )
 
-# Execution payload setup using resume credentials
+# =====================================================================
+# BINARY DATA INGESTION SUITE (PDF STREAM READER)
+# =====================================================================
+resume_path = "resume.pdf"
+
+# Verify standard source parameters prior to pipeline loop entry
+if not os.path.exists(resume_path):
+    print(f"❌ Error: Target resume file '{resume_path}' not found in root directory.")
+    print("Please place your 'resume.pdf' in this folder before running the pipeline.")
+    sys.exit(1)
+
+print(f"📄 Scanning and parsing text layers from '{resume_path}'...")
+
+# Unpack internal document objects page by page
+pdf_reader = PdfReader(resume_path)
+extracted_resume_text = ""
+
+for page_num, page in enumerate(pdf_reader.pages, start=1):
+    page_text = page.extract_text()
+    if page_text:
+        extracted_resume_text += f"\n--- RESUME PAGE {page_num} ---\n" + page_text
+
+# Direct payload variables to use extracted document buffers
 execution_inputs = {
     "target_roles": "Embedded Software & Firmware Engineering Internships",
     "location": "Greater Toronto Area",
-    "user_profile": (
-        "Candidate Background: Computer Engineering student at McMaster University "
-        "with a 3.86/4.0 GPA (Dean's List). Strong foundational knowledge in Data Structures "
-        "& Algorithms, Embedded Systems Design, Digital Logic, and Computer Architecture.\n\n"
-        
-        "Enterprise Experience: Former IT Core Systems Intern at Zurich Canada. Experienced "
-        "in deploying enterprise error monitoring systems (Datadog) across multi-environment "
-        "stacks, building VBA data aggregation pipelines for large datasets (14,000+ records), "
-        "and tracking agile engineering delivery with custom Jira dashboards.\n\n"
-        
-        "Core Hardware & Systems Projects:\n"
-        "- Game Boy Emulator (C++): Built a low-level, cycle-accurate Sharp LR35902 CPU architecture "
-        "emulator from scratch using SDL2. Implemented opcode decoding, a custom Memory Management "
-        "Unit (MMU), memory bank switching (MBC), and persistent cartridge save states.\n"
-        "- Portable LiDAR Scanner (C): Developed firmware on a TI MSP432 MCU inside Keil uVision. "
-        "Configured register-level peripheral interfacing via I2C (100 kbps) and UART (115200 bps), "
-        "driving a stepper motor for 360-degree sweeps mapped to a 3D polar-to-volumetric MATLAB engine.\n"
-        "- Assistive Engineering Design: Co-designed mechanical shortcut-mapped hardware enclosures "
-        "following the Engineering Design Cycle.\n\n"
-        
-        "Technical Toolset:\n"
-        "- Languages: Advanced in C/C++, Python, Java, JavaScript, Verilog, VHDL, MATLAB.\n"
-        "- Hardware/EDA Tools: KiCad, Intel Quartus, Git, Soldering, SolidWorks, Fusion 360.\n"
-        "- Silicon Architectures: ARM-based Microcontrollers (MSP432, ESP32), Arduino, and FPGAs."
-    )
+    "user_profile": extracted_resume_text  
 }
 
+
 if __name__ == "__main__":
-    # Intercept standard output stream before executing any print operations
+    # Route primary execution traces down to our log interceptor filter
     output_filename = "full_report.md"
     sys.stdout = TerminalTee(output_filename)
 
@@ -94,10 +96,9 @@ if __name__ == "__main__":
     print("Running Pipeline...")
     print("==============================================\n")
     
-    # Execute the crew pipeline
+    # Fire up agent framework loops
     final_report = job_hunting_crew.kickoff(inputs=execution_inputs)
     
     print("\n==============================================")
-    print("Pipeline Complete. Report:")
+    print("Pipeline Complete. Outputs Generated Successfully.")
     print("==============================================\n")
-    print(final_report)
