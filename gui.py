@@ -106,6 +106,9 @@ class App(ctk.CTk):
             filename = os.path.basename(file_path)
             self.lbl_status_file.configure(text=f"Loaded: {filename}", text_color="green")
             self.btn_run.configure(state="normal")
+            
+            # Display original resume document layout inside panel immediately
+            self.resume_window.display_pdf_layout(file_path)
 
     def start_pipeline_thread(self):
         """Asynchronous worker activation routine ensuring GUI fluid latency."""
@@ -129,8 +132,8 @@ class App(ctk.CTk):
                 if page_text:
                     extracted_resume_text += f"\n--- RESUME PAGE {page_num} ---\n" + page_text
 
-            # Boot language framework properties
-            claude_brain = LLM(model="anthropic/claude-sonnet-5")
+            # Updated processing framework model binding identifier string to Claude 4.5 Haiku
+            claude_brain = LLM(model="anthropic/claude-haiku-4-5")
 
             # Load architectural definitions from factory scripts
             job_searcher, skills_advisor, interview_coach, ats_optimizer = create_agents(claude_brain)

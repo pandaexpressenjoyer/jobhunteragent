@@ -46,13 +46,15 @@ class ResumeTab(ctk.CTkFrame):
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             
-            # Render page to an image map using a scale factor for crisp text resolution
-            pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+            # Increased matrix resolution value to provide crisp scaling on widescreen panels
+            pix = page.get_pixmap(matrix=fitz.Matrix(2.2, 2.2))
             img_data = pix.tobytes("ppm")
             
             # Unpack image data bytes into standard PIL structures
             pil_img = Image.open(fitz.io.BytesIO(img_data))
-            ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(550, 750))
+            
+            # Scaled size window configuration coordinates to take up full available canvas room
+            ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(740, 960))
             
             # Keep object handle reference alive in memory array
             self.pdf_images.append(ctk_img)
@@ -113,6 +115,13 @@ class ResumeTab(ctk.CTkFrame):
             lbl_iss = ctk.CTkLabel(card, text=issue_text, font=ctk.CTkFont(size=14, weight="bold"), wraplength=320, justify="left")
             lbl_iss.pack(anchor="w", padx=12, pady=2)
 
-            # Explanatory Text Bubble/Body Box
-            lbl_cor = ctk.CTkLabel(card, text=correction_text, font=ctk.CTkFont(size=12), wraplength=320, justify="left", text_color="light gray")
+            # Updated smaller correction text block from light grey to standard high-contrast solid black
+            lbl_cor = ctk.CTkLabel(
+                card, 
+                text=correction_text, 
+                font=ctk.CTkFont(size=12), 
+                wraplength=320, 
+                justify="left", 
+                text_color="black"
+            )
             lbl_cor.pack(anchor="w", padx=12, pady=(4, 10))
