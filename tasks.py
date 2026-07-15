@@ -2,10 +2,9 @@ from crewai import Task
 
 def create_tasks(job_searcher, skills_advisor, interview_coach, ats_optimizer):
     """
-    Assembles the chronological task dependencies for the system pipeline.
-    Directs tool execution criteria and maps discrete file outputs for final reports.
+    Defines the chronological list of tasks required to execute the pipeline,
+    configured to generate structured tokens for the interactive GUI cards.
     """
-    # Task 1: Find matching target records and parse their internal contents
     task_find_jobs = Task(
         description=(
             "Search and identify active {target_roles} positions open in the {location}. "
@@ -16,7 +15,6 @@ def create_tasks(job_searcher, skills_advisor, interview_coach, ats_optimizer):
         agent=job_searcher
     )
 
-    # Task 2: Cross-reference required competencies against candidate background
     task_analyze_skills = Task(
         description=(
             "Review the full technical requirements discovered by the Researcher. "
@@ -27,7 +25,6 @@ def create_tasks(job_searcher, skills_advisor, interview_coach, ats_optimizer):
         agent=skills_advisor
     )
 
-    # Task 3: Build behavioral-technical performance preparation files
     task_coaching = Task(
         description=(
             "Review the gathered job requirements, identified skill gaps, and active job openings. "
@@ -38,20 +35,24 @@ def create_tasks(job_searcher, skills_advisor, interview_coach, ats_optimizer):
         ),
         expected_output="3 targeted interview questions complete with ideal engineering response strategies, followed by a dedicated section listing discovered job application URLs.",
         agent=interview_coach,
-        output_file="advice.md"
+        output_file="gta_firmware_playbook.md"
     )
 
-    # Task 4: Reformat documentation fields to clear programmatic candidate screens
+    # Task 4: Tailors resume content into a syntax layout parsable by the GUI
     task_tailor_resume = Task(
         description=(
             "Review the active requirements scraped from the job market and the candidate's original resume text: {user_profile}.\n\n"
-            "Provide a complete, revised version of the candidate's core resume sections (Technical Skills Matrix and Project Bullets) "
-            "optimized to clear automated ATS scanning software for these specific targets.\n\n"
-            "Focus on contextual keyword density (ensuring skills like RTOS, CMake, or CAN are naturally aligned) "
-            "and suggest high-signal technical vocabulary adjustments (e.g., noting that their Game Boy opcode decoder is an ISA implementation) "
-            "without fabricating any new or unearned experience."
+            "Identify the top 4-6 most critical keyword or phrase improvements needed to maximize ATS compliance. "
+            "For every single improvement, write it out exactly in this structured markdown block format so the GUI can parse it into cards:\n\n"
+            "START_SUGGESTION\n"
+            "SECTION: [Name of resume section, e.g., Technical Skills Matrix or Game Boy Emulator Project]\n"
+            "ISSUE: [Brief description of the missing context or missing keyword, e.g., Missing critical FreeRTOS keyword]\n"
+            "CORRECTION: [Detailed text bubble explaining exactly how to reframe or rewrite the bullet point to pass the ATS filter safely]\n"
+            "END_SUGGESTION\n\n"
+            "Do not deviate from this syntax block. Ensure your corrections focus strictly on contextual keyword density "
+            "without fabricating any unearned experience."
         ),
-        expected_output="A completely tailored, clean markdown document detailing exact resume section upgrades and keyword adjustments.",
+        expected_output="A series of structured suggestion tokens mapping explicit section, issue, and correction attributes.",
         agent=ats_optimizer,
         output_file="ats_optimized_resume.md"
     )
